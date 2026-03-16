@@ -2,19 +2,25 @@ import React from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 
-
 export default function Index({ books }) {
     const { flash } = usePage().props;
+
     const handleDelete = (id) => {
         if (confirm('Bạn có chắc chắn muốn xóa cuốn sách này không?')) {
             router.delete(`/admin/books/${id}`);
         }
     };
 
+    // Hàm format giá tiền
+    const formatCurrency = (price) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    };
+
+    // Lấy mảng dữ liệu sách (Dùng Optional Chaining để tránh lỗi undefined)
+    const bookData = books?.data || (Array.isArray(books) ? books : []);
+
     return (
-        
         <AdminLayout>
-            
             <Head title="Quản lý Sách - Admin" />
 
             <div className="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md">
@@ -28,7 +34,6 @@ export default function Index({ books }) {
                     </Link>
                 </div>
 
-                {/* Thông báo thành công nếu có (ví dụ khi vừa thêm/xóa xong chuyển về trang này) */}
                 {flash?.success && (
                     <div className="mb-4 p-4 bg-green-100 text-green-700 border border-green-200 rounded-md">
                         {flash.success}
@@ -49,21 +54,19 @@ export default function Index({ books }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {books.data.length === 0 ? (
+                            {bookData.length === 0 ? (
                                 <tr>
                                     <td colSpan="7" className="py-6 text-center text-gray-500">
                                         Chưa có cuốn sách nào. Hãy thêm sách mới!
                                     </td>
                                 </tr>
                             ) : (
-                                books.data.map((book) => (
+                                bookData.map((book) => (
                                     <tr key={book.id} className="hover:bg-gray-50">
                                         <td className="py-3 px-4 text-sm text-gray-700">{book.id}</td>
                                         <td className="py-3 px-4">
                                             {book.image ? (
                                                 <img 
-                                                    // Laravel lưu đường dẫn dạng "books/tên-ảnh.jpg" trong DB, 
-                                                    // ta cần thêm "/storage/" ở đầu để hiển thị ảnh
                                                     src={`/storage/${book.image}`} 
                                                     alt={book.title} 
                                                     className="w-16 h-20 object-cover rounded border"
@@ -76,20 +79,16 @@ export default function Index({ books }) {
                                         </td>
                                         <td className="py-3 px-4 text-sm font-medium text-gray-800">{book.title}</td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {book.category ? book.category.name : 'N/A'}
+                                            {book.category?.name || 'N/A'}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-red-600 font-semibold">
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
+                                            {formatCurrency(book.price)}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">{book.stock}</td>
                                         <td className="py-3 px-4 text-center">
-        <Link href={`/admin/books/${book.id}/edit`} className="text-blue-500 hover:underline mr-3">
-            Sửa
-        </Link>
-        <button onClick={() => handleDelete(book.id)} className="text-red-500 hover:underline">
-            Xóa
-        </button>
-    </td>
+                                            <Link href={`/admin/books/${book.id}/edit`} className="text-blue-500 hover:underline mr-3">Sửa</Link>
+                                            <button onClick={() => handleDelete(book.id)} className="text-red-500 hover:underline">Xóa</button>
+                                        </td>
                                     </tr> 
                                 ))
                             )}
@@ -97,13 +96,13 @@ export default function Index({ books }) {
                     </table>
                 </div>
 
-                {/* Phân trang đơn giản (nếu số sách > 10 cuốn) */}
-                {books.links && books.links.length > 3 && (
+                {/* Phân trang (Chỉ hiện khi books là object có thuộc tính links) */}
+                {books?.links && books.links.length > 3 && (
                     <div className="mt-4 flex justify-end">
                         {books.links.map((link, index) => (
                             <Link
                                 key={index}
-                                href={link.url}
+                                href={link.url || '#'}
                                 className={`px-3 py-1 border mx-1 rounded text-sm ${link.active ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'} ${!link.url && 'opacity-50 cursor-not-allowed'}`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             ></Link>
@@ -111,7 +110,6 @@ export default function Index({ books }) {
                     </div>
                 )}
             </div>
-        
         </AdminLayout>
     );
 }

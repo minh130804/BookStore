@@ -30,14 +30,14 @@ Route::get('/ai/chat', function (Request $request) {
         // 1. LẤY TOÀN BỘ DỮ LIỆU SÁCH (Bao gồm cả description để AI đọc)
         $books = DB::table('books')
             ->join('categories', 'books.category_id', '=', 'categories.id')
-            ->select('books.title', 'books.price', 'books.description', 'categories.name as category_name')
+            ->select('books.title', 'books.discount_price', 'books.description', 'categories.name as category_name')
             ->get();
         
         // 2. TẠO DANH SÁCH DỮ LIỆU CHI TIẾT CHO AI
         $bookDataContext = "";
         foreach ($books as $book) {
             $bookDataContext .= "Sách: " . $book->title . "\n";
-            $bookDataContext .= "- Giá: " . number_format($book->price, 0, ',', '.') . "đ\n";
+            $bookDataContext .= "- Giá: " . number_format($book->discount_price, 0, ',', '.') . "đ\n";
             $bookDataContext .= "- Thể loại: " . $book->category_name . "\n";
             $bookDataContext .= "- Mô tả chi tiết: " . ($book->description ?? 'Đang cập nhật nội dung') . "\n\n";
         }

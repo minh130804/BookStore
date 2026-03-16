@@ -6,11 +6,14 @@ import GeminiChatbot from '@/Components/GeminiChatbot';
 export default function Index({ books, cart, filters }) {
     const formatPrice = (price) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
+    // XỬ LÝ DỮ LIỆU AN TOÀN: Đảm bảo luôn lấy được mảng sản phẩm dù có phân trang hay không
+    const bookList = books?.data || (Array.isArray(books) ? books : []);
+    const totalBooks = books?.total || bookList.length;
+
     return (
         <StoreLayout cart={cart} filters={filters}>
             <Head title="Trang chủ - BookStore" />
 
-            {/* HERO BANNER - ĐIỂM NHẤN TRANG CHỦ (Chỉ hiện khi không lọc/tìm kiếm) */}
             {!filters?.search && !filters?.category && (
                 <div className="bg-gray-900 rounded-3xl overflow-hidden shadow-2xl mb-12 relative flex items-center min-h-[350px]">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-indigo-900 opacity-90"></div>
@@ -30,37 +33,33 @@ export default function Index({ books, cart, filters }) {
                 </div>
             )}
 
-            {/* KHU VỰC LƯỚI SÁCH (TRÀN FULL MÀN HÌNH) */}
             <div className="w-full">
-                {/* Tiêu đề & Số lượng kết quả */}
                 <div className="flex justify-between items-end mb-8">
                     <h2 className="text-2xl font-black text-gray-900">
                         {filters?.search ? `Kết quả cho: "${filters.search}"` : (filters?.category ? 'Sách theo danh mục' : 'Sách Mới Cập Nhật')}
                     </h2>
-                    <span className="text-sm font-bold text-gray-500">{books.total} sản phẩm</span>
+                    {/* Sửa lại cách hiển thị tổng số lượng */}
+                    <span className="text-sm font-bold text-gray-500">{totalBooks} Sản phẩm</span>
                 </div>
 
-                {/* Nếu không có sách nào */}
-                {books.data.length === 0 ? (
+                {/* Kiểm tra mảng bookList an toàn */}
+                {bookList.length === 0 ? (
                     <div className="bg-white p-16 rounded-3xl shadow-sm border border-gray-100 text-center">
                         <span className="text-6xl block mb-4">📭</span>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy cuốn sách nào</h3>
                         <p className="text-gray-500">Vui lòng thử lại với từ khóa hoặc chọn danh mục khác trên thanh menu.</p>
                     </div>
                 ) : (
-                    /* Lưới sách: 2 cột (mobile) -> 3 cột (tablet) -> 4 cột (laptop) -> 5 cột (màn hình lớn) */
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        {books.data.map((book) => (
+                    /* Để 4 cột (lg:grid-cols-4) cho cân đối với số lượng 8 hoặc 12 sản phẩm */
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {bookList.map((book) => (
                             <Link href={`/book/${book.id}`} key={book.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group">
-                                
-                                {/* Ảnh bìa & Tag giảm giá */}
                                 <div className="h-64 bg-gray-100 flex items-center justify-center overflow-hidden relative">
                                     {book.image ? (
                                         <img src={`/storage/${book.image}`} alt={book.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     ) : (
                                         <span className="text-gray-400">Không có ảnh</span>
                                     )}
-                                    
                                     {book.discount_price && (
                                         <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-md">
                                             -{Math.round((1 - book.discount_price / book.price) * 100)}%
@@ -68,7 +67,6 @@ export default function Index({ books, cart, filters }) {
                                     )}
                                 </div>
 
-                                {/* Thông tin sách */}
                                 <div className="p-5 flex flex-col flex-1 bg-white">
                                     <p className="text-xs font-bold text-blue-600 mb-1 uppercase tracking-wide line-clamp-1">
                                         {book.category?.name || 'Chưa phân loại'}
@@ -76,7 +74,6 @@ export default function Index({ books, cart, filters }) {
                                     <h3 className="text-md font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors" title={book.title}>
                                         {book.title}
                                     </h3>
-                                    
                                     <div className="mt-auto pt-4 flex items-center justify-between">
                                         <div>
                                             {book.discount_price ? (
@@ -88,7 +85,6 @@ export default function Index({ books, cart, filters }) {
                                                 <span className="text-lg font-black text-red-600">{formatPrice(book.price)}</span>
                                             )}
                                         </div>
-                                        {/* Icon giỏ hàng (Chỉ mang tính trang trí vì click vào sẽ chuyển sang trang chi tiết) */}
                                         <div className="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -101,13 +97,13 @@ export default function Index({ books, cart, filters }) {
                     </div>
                 )}
 
-                {/* Phân trang */}
-                {books.links && books.links.length > 3 && (
+                {/* Phân trang: Kiểm tra an toàn sự tồn tại của links */}
+                {books?.links && books.links.length > 3 && (
                     <div className="mt-12 flex justify-center space-x-2">
                         {books.links.map((link, index) => (
                             <Link 
                                 key={index} 
-                                href={link.url} 
+                                href={link.url || '#'} 
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${link.active ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'} ${!link.url && 'opacity-50 cursor-not-allowed'}`} 
                                 dangerouslySetInnerHTML={{ __html: link.label }} 
                             />

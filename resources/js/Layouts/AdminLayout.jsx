@@ -71,9 +71,7 @@ export default function AdminLayout({ children }) {
                     <h2 className="text-xl font-bold text-gray-800">Hệ thống Quản lý BookStore</h2>
                     
                     <div className="flex items-center space-x-6">
-                        <Link href="/" className="text-gray-600 hover:text-blue-600 font-medium flex items-center transition-colors">
-                            <span className="mr-2">🏠</span> Xem Cửa hàng
-                        </Link>
+                       
                         
                         <div className="h-6 w-px bg-gray-300"></div>
 

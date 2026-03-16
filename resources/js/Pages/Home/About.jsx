@@ -33,7 +33,7 @@ export default function About() {
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">Câu chuyện của BookStore</h2>
                         <div className="prose prose-lg text-gray-600 space-y-6">
                             <p>
-                                Được thành lập vào năm 2026 như một dự án đầy tâm huyết của Nhóm 14, BookStore bắt đầu từ một ý tưởng giản đơn: Làm thế nào để tạo ra một không gian mua sắm sách trực tuyến thân thiện, hiện đại và dễ sử dụng nhất cho người Việt?
+                                Được thành lập vào năm 2026 như một dự án đầy tâm huyết của chúng tôi, BookStore bắt đầu từ một ý tưởng giản đơn: Làm thế nào để tạo ra một không gian mua sắm sách trực tuyến thân thiện, hiện đại và dễ sử dụng nhất cho người Việt?
                             </p>
                             <p>
                                 Trải qua quá trình nghiên cứu và phát triển bằng công nghệ hiện đại nhất (Laravel & ReactJS), BookStore không chỉ dừng lại ở một đồ án học thuật, mà đã trở thành một nền tảng thực sự, nơi kết nối hàng ngàn độc giả với những tác phẩm giá trị.
@@ -67,7 +67,7 @@ export default function About() {
 
             {/* Tái sử dụng Footer từ trang chủ */}
             <footer className="bg-gray-900 text-gray-300 py-12 mt-auto text-center border-t border-gray-800">
-                 &copy; 2026 BookStore - Đồ án Nhóm 14. Được xây dựng với Laravel & React.
+                 &copy; 2026 BookStore 
             </footer>
         </div>
     );
