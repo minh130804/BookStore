@@ -1,0 +1,192 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Models\Cart;
+use App\Models\Book;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+
+class CheckoutController extends Controller
+{
+    // --- 1. HIỂN THỊ GIAO DIỆN THANH TOÁN ---
+    public function index()
+    {
+        $cart = Cart::with('items.book')->where('user_id', Auth::id())->first();
+        
+        if (!$cart || $cart->items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống!');
+        }
+
+        return Inertia::render('Home/Checkout/Index', [
+            'cart' => $cart
+        ]);
+    }
+
+    // --- 2. XỬ LÝ LƯU ĐƠN HÀNG VÀ CHUYỂN HƯỚNG ---
+    public function store(Request $request)
+    {
+        $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'customer_address' => 'required|string|max:255',
+            'payment_method' => 'required|in:cod,vnpay',
+        ]);
+
+        $cart = Cart::with('items.book')->where('user_id', Auth::id())->first();
+        if (!$cart || $cart->items->isEmpty()) {
+            return back()->with('error', 'Giỏ hàng trống!');
+        }
+
+        $totalPrice = 0;
+        foreach ($cart->items as $item) {
+            $price = $item->book->discount_price ?? $item->book->price;
+            $totalPrice += $price * $item->quantity;
+        }
+
+        $order = Order::create([
+            'user_id' => Auth::id(),
+            'customer_name' => $request->customer_name,
+            'customer_phone' => $request->customer_phone,
+            'customer_address' => $request->customer_address,
+            'total_price' => $totalPrice,
+            'status' => 'pending', 
+            'payment_method' => $request->payment_method, 
+        ]);
+
+        foreach ($cart->items as $item) {
+            $price = $item->book->discount_price ?? $item->book->price;
+            
+            $order->items()->create([
+                'book_id' => $item->book_id,
+                'quantity' => $item->quantity,
+                'price' => $price,
+            ]);
+
+            $book = Book::find($item->book_id);
+            if ($book && $book->stock >= $item->quantity) {
+                $book->decrement('stock', $item->quantity);
+            }
+        }
+
+        $cart->items()->delete();
+
+        // NẾU LÀ VNPAY -> GỌI HÀM TẠO URL VÀ CHUYỂN TRANG BẰNG INERTIA
+        if ($request->payment_method === 'vnpay') {
+            $vnp_Url = $this->createVnPayUrl($order);
+            return Inertia::location($vnp_Url); 
+        }
+
+        return redirect()->route('my-orders')->with('success', 'Đặt hàng thành công! Đơn hàng của bạn đang chờ xử lý.');
+    }
+
+    // --- 3. HÀM TẠO URL VNPAY (MÃ MỚI TINH - CHUẨN RFC 3986) ---
+    private function createVnPayUrl($order)
+    {
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+
+        // MÃ API TỪ TÀI KHOẢN MỚI CỦA BẠN
+        $vnp_TmnCode = "O898YKTP"; 
+        $vnp_HashSecret = "XSYNFUF2S9M79JDERZCN6XRJ13R6ZAJ4"; 
+        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        $vnp_Returnurl = "http://127.0.0.1:8000/vnpay/return";
+
+        // Ép kiểu số tiền về nguyên bản
+        $vnp_Amount = intval(round((float)$order->total_price)) * 100; 
+
+        // Fake IP tránh lỗi môi trường test
+        $vnp_IpAddr = request()->ip();
+        if ($vnp_IpAddr == '127.0.0.1' || $vnp_IpAddr == '::1') {
+            $vnp_IpAddr = '119.17.253.84'; 
+        }
+
+        // Tạo thời gian giới hạn 15 phút
+        $startTime = date("YmdHis");
+        $expireTime = date('YmdHis', strtotime('+15 minutes', strtotime($startTime)));
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => $startTime,
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => "vn",
+            "vnp_OrderInfo" => "ThanhToanDonHang_" . $order->id,
+            "vnp_OrderType" => "billpayment",
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $order->id . "_" . time(), // Thêm dấu _ để lúc về dễ tách ID
+            "vnp_ExpireDate" => $expireTime
+        );
+
+        ksort($inputData);
+        $hashdata = "";
+        $i = 0;
+        
+        // Chuẩn mã hóa rawurlencode
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . rawurlencode($key) . "=" . rawurlencode($value);
+            } else {
+                $hashdata .= rawurlencode($key) . "=" . rawurlencode($value);
+                $i = 1;
+            }
+        }
+
+        $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+        $vnp_Url = $vnp_Url . "?" . $hashdata . "&vnp_SecureHash=" . $vnpSecureHash;
+
+        return $vnp_Url;
+    }
+
+    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY ---
+    public function vnpayReturn(Request $request)
+    {
+        // MÃ SECRET TỪ TÀI KHOẢN MỚI
+        $vnp_HashSecret = "XSYNFUF2S9M79JDERZCN6XRJ13R6ZAJ4"; 
+        
+        $inputData = array();
+        foreach ($request->all() as $key => $value) {
+            if (substr($key, 0, 4) == "vnp_") {
+                $inputData[$key] = $value;
+            }
+        }
+
+        $vnp_SecureHash = $inputData['vnp_SecureHash'];
+        unset($inputData['vnp_SecureHash']);
+        ksort($inputData);
+        $i = 0;
+        $hashData = "";
+        
+        // Cùng chuẩn mã hóa rawurlencode
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashData = $hashData . '&' . rawurlencode($key) . "=" . rawurlencode($value);
+            } else {
+                $hashData = $hashData . rawurlencode($key) . "=" . rawurlencode($value);
+                $i = 1;
+            }
+        }
+
+        $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+        
+        // Lấy lại ID đơn hàng gốc
+        $orderId = explode('_', $request->vnp_TxnRef)[0];
+        $order = Order::find($orderId);
+
+        if ($secureHash == $vnp_SecureHash) {
+            if ($request->vnp_ResponseCode == '00') {
+                if ($order) $order->update(['status' => 'processing']); 
+                return redirect()->route('my-orders')->with('success', 'Giao dịch thành công! Cảm ơn bạn đã thanh toán qua VNPAY.');
+            } else {
+                if ($order) $order->update(['status' => 'cancelled']); 
+                return redirect()->route('my-orders')->with('error', 'Giao dịch thất bại hoặc đã bị hủy.');
+            }
+        } else {
+            return redirect()->route('my-orders')->with('error', 'Chữ ký không hợp lệ! Vui lòng thử lại.');
+        }
+    }
+}
