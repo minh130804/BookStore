@@ -16,6 +16,8 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            gender: user.gender || '', // Lấy từ db lên
+            dob: user.dob || '',       // Lấy từ db lên
         });
 
     const submit = (e) => {
@@ -67,6 +69,39 @@ export default function UpdateProfileInformation({
                     />
 
                     <InputError className="mt-2" message={errors.email} />
+                </div>
+                
+                {/* Khu vực thêm mới: Giới tính */}
+                <div>
+                    <InputLabel htmlFor="gender" value="Giới tính" />
+                    <select
+                        id="gender"
+                        name="gender"
+                        value={data.gender}
+                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                        onChange={(e) => setData('gender', e.target.value)}
+                        required
+                    >
+                        <option value="" disabled>Chọn giới tính</option>
+                        <option value="nam">Nam</option>
+                        <option value="nu">Nữ</option>
+                        <option value="khac">Khác</option>
+                    </select>
+                    <InputError className="mt-2" message={errors.gender} />
+                </div>
+
+                {/* Khu vực thêm mới: Ngày sinh */}
+                <div>
+                    <InputLabel htmlFor="dob" value="Ngày sinh" />
+                    <TextInput
+                        id="dob"
+                        type="date"
+                        className="mt-1 block w-full"
+                        value={data.dob}
+                        onChange={(e) => setData('dob', e.target.value)}
+                        required
+                    />
+                    <InputError className="mt-2" message={errors.dob} />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (

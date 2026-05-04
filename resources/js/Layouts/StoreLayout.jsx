@@ -81,19 +81,26 @@ export default function StoreLayout({ children, cart, filters }) {
                             
                             {/* User Menu - Đã sửa thành chữ rõ ràng */}
                             {auth.user ? (
-                                <div className="hidden md:flex items-center space-x-4">
-                                    <div className="text-sm text-right">
-                                        <p className="text-gray-500 text-xs">Xin chào,</p>
-                                        <p className="font-bold text-gray-800">{auth.user.name}</p>
-                                    </div>
-                                    <div className="h-6 w-px bg-gray-300"></div>
-                                    <Link href="/my-orders" className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
-                                        Đơn hàng của tôi
-                                    </Link>
-                                    <Link href={route('logout')} method="post" as="button" className="text-sm font-bold text-red-500 hover:text-red-700 transition">
-                                        Đăng xuất
-                                    </Link>
-                                </div>
+                              <div className="hidden md:flex items-center space-x-4">
+        <div className="text-sm text-right">
+            <p className="text-gray-500 text-xs">Xin chào,</p>
+            <p className="font-bold text-gray-800">{auth.user.name}</p>
+        </div>
+        
+        <div className="h-6 w-px bg-gray-300"></div>
+        
+        {/* NÚT XEM PROFILE MỚI THÊM VÀO ĐÂY */}
+        <Link href={route('profile.edit')} className="text-sm font-bold text-gray-700 hover:text-blue-600 transition">
+            Xem Profile
+        </Link>
+
+        <Link href="/my-orders" className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
+            Đơn hàng của tôi
+        </Link>
+        <Link href={route('logout')} method="post" as="button" className="text-sm font-bold text-red-500 hover:text-red-700 transition">
+            Đăng xuất
+        </Link>
+    </div>
                             ) : (
                                 <div className="hidden md:flex items-center space-x-3">
                                     <Link href="/login" className="text-gray-700 font-bold hover:text-blue-600">Đăng nhập</Link>

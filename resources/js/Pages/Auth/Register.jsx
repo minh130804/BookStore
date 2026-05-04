@@ -12,6 +12,8 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        gender: '', // Thêm dòng này
+    dob: ''
     });
 
     const submit = (e) => {
@@ -75,6 +77,39 @@ export default function Register() {
 
                     <InputError message={errors.email} className="mt-2" />
                 </div>
+                {/* Dropdown Giới tính */}
+<div className="mt-4">
+    <InputLabel htmlFor="gender" value="Giới tính" />
+    <select
+        id="gender"
+        name="gender"
+        value={data.gender}
+        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+        onChange={(e) => setData('gender', e.target.value)}
+        required
+    >
+        <option value="" disabled>Chọn giới tính</option>
+        <option value="nam">Nam</option>
+        <option value="nu">Nữ</option>
+        <option value="khac">Khác</option>
+    </select>
+    <InputError message={errors.gender} className="mt-2" />
+</div>
+
+{/* Chọn Ngày sinh */}
+<div className="mt-4">
+    <InputLabel htmlFor="dob" value="Ngày sinh" />
+    <TextInput
+        id="dob"
+        type="date"
+        name="dob"
+        value={data.dob}
+        className="mt-1 block w-full"
+        onChange={(e) => setData('dob', e.target.value)}
+        required
+    />
+    <InputError message={errors.dob} className="mt-2" />
+</div>
 
                 <div className="mt-4">
                     <InputLabel htmlFor="password" value="Password" />

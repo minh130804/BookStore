@@ -1,14 +1,38 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import StoreLayout from '@/Layouts/StoreLayout';
 import GeminiChatbot from '@/Components/GeminiChatbot';
 
 export default function Index({ books, cart, filters }) {
+    // Lấy thông tin user để kiểm tra đăng nhập
+    const { auth } = usePage().props;
+
     const formatPrice = (price) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
-    // XỬ LÝ DỮ LIỆU AN TOÀN: Đảm bảo luôn lấy được mảng sản phẩm dù có phân trang hay không
+    // Xử lý dữ liệu an toàn
     const bookList = books?.data || (Array.isArray(books) ? books : []);
     const totalBooks = books?.total || bookList.length;
+
+    // Hàm xử lý thêm vào giỏ hàng nhanh
+    const handleQuickAdd = (e, bookId) => {
+        // Chặn sự kiện click lan ra ngoài (ngăn không cho nhảy sang trang chi tiết)
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Nếu chưa đăng nhập thì chuyển hướng sang trang đăng nhập
+        if (!auth.user) {
+            router.get(route('login'));
+            return;
+        }
+
+        // Gửi request thêm vào giỏ hàng
+        router.post(route('cart.store'), {
+            book_id: bookId,
+            quantity: 1
+        }, {
+            preserveScroll: true, // Giữ nguyên vị trí cuộn chuột trên trang
+        });
+    };
 
     return (
         <StoreLayout cart={cart} filters={filters}>
@@ -38,11 +62,9 @@ export default function Index({ books, cart, filters }) {
                     <h2 className="text-2xl font-black text-gray-900">
                         {filters?.search ? `Kết quả cho: "${filters.search}"` : (filters?.category ? 'Sách theo danh mục' : 'Sách Mới Cập Nhật')}
                     </h2>
-                    {/* Sửa lại cách hiển thị tổng số lượng */}
                     <span className="text-sm font-bold text-gray-500">{totalBooks} Sản phẩm</span>
                 </div>
 
-                {/* Kiểm tra mảng bookList an toàn */}
                 {bookList.length === 0 ? (
                     <div className="bg-white p-16 rounded-3xl shadow-sm border border-gray-100 text-center">
                         <span className="text-6xl block mb-4">📭</span>
@@ -50,7 +72,6 @@ export default function Index({ books, cart, filters }) {
                         <p className="text-gray-500">Vui lòng thử lại với từ khóa hoặc chọn danh mục khác trên thanh menu.</p>
                     </div>
                 ) : (
-                    /* Để 4 cột (lg:grid-cols-4) cho cân đối với số lượng 8 hoặc 12 sản phẩm */
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {bookList.map((book) => (
                             <Link href={`/book/${book.id}`} key={book.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group">
@@ -85,11 +106,17 @@ export default function Index({ books, cart, filters }) {
                                                 <span className="text-lg font-black text-red-600">{formatPrice(book.price)}</span>
                                             )}
                                         </div>
-                                        <div className="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        
+                                        {/* Nút giỏ hàng được bọc trong thẻ button */}
+                                        <button 
+                                            onClick={(e) => handleQuickAdd(e, book.id)}
+                                            className="w-10 h-10 rounded-full bg-gray-50 hover:bg-blue-600 flex items-center justify-center transition-colors group/btn"
+                                            title="Thêm vào giỏ hàng"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 group-hover/btn:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                             </svg>
-                                        </div>
+                                        </button>
                                     </div>
                                 </div>
                             </Link>
@@ -97,7 +124,7 @@ export default function Index({ books, cart, filters }) {
                     </div>
                 )}
 
-                {/* Phân trang: Kiểm tra an toàn sự tồn tại của links */}
+                {/* Phân trang */}
                 {books?.links && books.links.length > 3 && (
                     <div className="mt-12 flex justify-center space-x-2">
                         {books.links.map((link, index) => (

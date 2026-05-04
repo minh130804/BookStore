@@ -31,6 +31,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+        href={route('home')}
+        active={route().current('home')}
+    >
+        &larr; Về Trang chủ
+    </NavLink>
                             </div>
                         </div>
 
