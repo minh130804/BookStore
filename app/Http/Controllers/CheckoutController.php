@@ -73,6 +73,7 @@ class CheckoutController extends Controller
 
         $cart->items()->delete();
 
+        // NẾU LÀ VNPAY -> GỌI HÀM TẠO URL VÀ CHUYỂN TRANG
         if ($request->payment_method === 'vnpay') {
             $vnp_Url = $this->createVnPayUrl($order);
             return Inertia::location($vnp_Url); 
@@ -81,12 +82,12 @@ class CheckoutController extends Controller
         return redirect()->route('my-orders')->with('success', 'Đặt hàng thành công! Đơn hàng của bạn đang chờ xử lý.');
     }
 
-    // --- 3. HÀM TẠO URL VNPAY (ĐÃ SỬA CHUẨN) ---
+    // --- 3. HÀM TẠO URL VNPAY (ĐÃ FIX TOÀN BỘ LỖI BẰNG HARDCODE) ---
     private function createVnPayUrl($order)
     {
         date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-        // Lấy thông tin từ .env hoặc Railway Variables
+        // Gắn cứng thông tin xịn để bypass lỗi cache của Railway
         $vnp_TmnCode = "PJWU445Q"; 
         $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
@@ -94,10 +95,8 @@ class CheckoutController extends Controller
 
         $vnp_Amount = intval(round((float)$order->total_price)) * 100; 
 
-        $vnp_IpAddr = request()->ip();
-        if ($vnp_IpAddr == '127.0.0.1' || $vnp_IpAddr == '::1') {
-            $vnp_IpAddr = '119.17.253.84'; 
-        }
+        // Gắn cứng IP để chống lỗi proxy đa IP trên Railway
+        $vnp_IpAddr = "119.17.253.84";
 
         $startTime = date("YmdHis");
         $expireTime = date('YmdHis', strtotime('+15 minutes', strtotime($startTime)));
@@ -114,34 +113,40 @@ class CheckoutController extends Controller
             "vnp_OrderInfo" => "ThanhToanDonHang_" . $order->id,
             "vnp_OrderType" => "billpayment",
             "vnp_ReturnUrl" => $vnp_Returnurl,
-            "vnp_TxnRef" => $order->id . "_" . time(), 
+            "vnp_TxnRef" => $order->id . "_" . time(),
             "vnp_ExpireDate" => $expireTime
         );
 
         ksort($inputData);
-        $hashdata = "";
+        $query = "";
         $i = 0;
+        $hashdata = "";
         
+        // Dùng urlencode chuẩn theo tài liệu VNPAY
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
-                $hashdata .= '&' . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
             } else {
-                $hashdata .= rawurlencode($key) . "=" . rawurlencode($value);
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
                 $i = 1;
             }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
 
-        $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
-        $vnp_Url = $vnp_Url . "?" . $hashdata . "&vnp_SecureHash=" . $vnpSecureHash;
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+        }
 
         return $vnp_Url;
     }
 
-    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY (ĐÃ SỬA CHUẨN) ---
+    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY ---
     public function vnpayReturn(Request $request)
     {
-        // Lấy thông tin từ .env hoặc Railway Variables
-       $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98";
+        // Gắn cứng chữ ký xịn
+        $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
         
         $inputData = array();
         foreach ($request->all() as $key => $value) {
@@ -156,11 +161,12 @@ class CheckoutController extends Controller
         $i = 0;
         $hashData = "";
         
+        // Dùng urlencode chuẩn
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
-                $hashData = $hashData . '&' . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
             } else {
-                $hashData = $hashData . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
                 $i = 1;
             }
         }
