@@ -87,10 +87,10 @@ class CheckoutController extends Controller
         date_default_timezone_set('Asia/Ho_Chi_Minh');
 
         // Lấy thông tin từ .env hoặc Railway Variables
-        $vnp_TmnCode = env('VNPAY_TMN_CODE'); 
-        $vnp_HashSecret = env('VNPAY_HASH_SECRET'); 
-        $vnp_Url = env('VNP_URL', "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
-        $vnp_Returnurl = env('VNP_RETURNURL', route('vnpay.return'));
+        $vnp_TmnCode = "PJWU445Q"; 
+        $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
+        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        $vnp_Returnurl = "https://bookstorehaiha.io.vn/vnpay/return";
 
         $vnp_Amount = intval(round((float)$order->total_price)) * 100; 
 
