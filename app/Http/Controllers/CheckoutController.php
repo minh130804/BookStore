@@ -141,7 +141,7 @@ class CheckoutController extends Controller
     public function vnpayReturn(Request $request)
     {
         // Lấy thông tin từ .env hoặc Railway Variables
-        $vnp_HashSecret = env('VNPAY_HASH_SECRET'); 
+       $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98";
         
         $inputData = array();
         foreach ($request->all() as $key => $value) {
