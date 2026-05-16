@@ -73,7 +73,6 @@ class CheckoutController extends Controller
 
         $cart->items()->delete();
 
-        // NẾU LÀ VNPAY -> GỌI HÀM TẠO URL VÀ CHUYỂN TRANG BẰNG INERTIA
         if ($request->payment_method === 'vnpay') {
             $vnp_Url = $this->createVnPayUrl($order);
             return Inertia::location($vnp_Url); 
@@ -82,27 +81,24 @@ class CheckoutController extends Controller
         return redirect()->route('my-orders')->with('success', 'Đặt hàng thành công! Đơn hàng của bạn đang chờ xử lý.');
     }
 
-    // --- 3. HÀM TẠO URL VNPAY (MÃ MỚI TINH - CHUẨN RFC 3986) ---
+    // --- 3. HÀM TẠO URL VNPAY (ĐÃ SỬA CHUẨN) ---
     private function createVnPayUrl($order)
     {
         date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-        // MÃ API TỪ TÀI KHOẢN MỚI CỦA BẠN
-        $vnp_TmnCode = "O898YKTP"; 
-        $vnp_HashSecret = "XSYNFUF2S9M79JDERZCN6XRJ13R6ZAJ4"; 
-        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        $vnp_Returnurl = "http://127.0.0.1:8000/vnpay/return";
+        // Lấy thông tin từ .env hoặc Railway Variables
+        $vnp_TmnCode = env('VNPAY_TMN_CODE'); 
+        $vnp_HashSecret = env('VNPAY_HASH_SECRET'); 
+        $vnp_Url = env('VNP_URL', "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
+        $vnp_Returnurl = env('VNP_RETURNURL', route('vnpay.return'));
 
-        // Ép kiểu số tiền về nguyên bản
         $vnp_Amount = intval(round((float)$order->total_price)) * 100; 
 
-        // Fake IP tránh lỗi môi trường test
         $vnp_IpAddr = request()->ip();
         if ($vnp_IpAddr == '127.0.0.1' || $vnp_IpAddr == '::1') {
             $vnp_IpAddr = '119.17.253.84'; 
         }
 
-        // Tạo thời gian giới hạn 15 phút
         $startTime = date("YmdHis");
         $expireTime = date('YmdHis', strtotime('+15 minutes', strtotime($startTime)));
 
@@ -118,7 +114,7 @@ class CheckoutController extends Controller
             "vnp_OrderInfo" => "ThanhToanDonHang_" . $order->id,
             "vnp_OrderType" => "billpayment",
             "vnp_ReturnUrl" => $vnp_Returnurl,
-            "vnp_TxnRef" => $order->id . "_" . time(), // Thêm dấu _ để lúc về dễ tách ID
+            "vnp_TxnRef" => $order->id . "_" . time(), 
             "vnp_ExpireDate" => $expireTime
         );
 
@@ -126,7 +122,6 @@ class CheckoutController extends Controller
         $hashdata = "";
         $i = 0;
         
-        // Chuẩn mã hóa rawurlencode
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
                 $hashdata .= '&' . rawurlencode($key) . "=" . rawurlencode($value);
@@ -142,11 +137,11 @@ class CheckoutController extends Controller
         return $vnp_Url;
     }
 
-    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY ---
+    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY (ĐÃ SỬA CHUẨN) ---
     public function vnpayReturn(Request $request)
     {
-        // MÃ SECRET TỪ TÀI KHOẢN MỚI
-        $vnp_HashSecret = "XSYNFUF2S9M79JDERZCN6XRJ13R6ZAJ4"; 
+        // Lấy thông tin từ .env hoặc Railway Variables
+        $vnp_HashSecret = env('VNPAY_HASH_SECRET'); 
         
         $inputData = array();
         foreach ($request->all() as $key => $value) {
@@ -161,7 +156,6 @@ class CheckoutController extends Controller
         $i = 0;
         $hashData = "";
         
-        // Cùng chuẩn mã hóa rawurlencode
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
                 $hashData = $hashData . '&' . rawurlencode($key) . "=" . rawurlencode($value);
@@ -173,7 +167,6 @@ class CheckoutController extends Controller
 
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
         
-        // Lấy lại ID đơn hàng gốc
         $orderId = explode('_', $request->vnp_TxnRef)[0];
         $order = Order::find($orderId);
 
