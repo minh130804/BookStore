@@ -82,7 +82,7 @@ class CheckoutController extends Controller
         return redirect()->route('my-orders')->with('success', 'Đặt hàng thành công! Đơn hàng của bạn đang chờ xử lý.');
     }
 
-    // --- 3. HÀM TẠO URL VNPAY (ĐÃ FIX TOÀN BỘ LỖI BẰNG HARDCODE) ---
+    // --- 3. HÀM TẠO URL VNPAY ---
     private function createVnPayUrl($order)
     {
         date_default_timezone_set('Asia/Ho_Chi_Minh');
@@ -117,27 +117,17 @@ class CheckoutController extends Controller
             "vnp_ExpireDate" => $expireTime
         );
 
+        // 1. Sắp xếp mảng
         ksort($inputData);
-        $query = "";
-        $i = 0;
-        $hashdata = "";
         
-        // Dùng urlencode chuẩn theo tài liệu VNPAY
-        foreach ($inputData as $key => $value) {
-            if ($i == 1) {
-                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
-            } else {
-                $hashdata .= urlencode($key) . "=" . urlencode($value);
-                $i = 1;
-            }
-            $query .= urlencode($key) . "=" . urlencode($value) . '&';
-        }
-
-        $vnp_Url = $vnp_Url . "?" . $query;
-        if (isset($vnp_HashSecret)) {
-            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
-            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
-        }
+        // 2. Dùng hàm xịn của PHP để tự động build chuỗi chuẩn
+        $query = http_build_query($inputData);
+        
+        // 3. Băm chữ ký
+        $vnpSecureHash = hash_hmac('sha512', $query, $vnp_HashSecret);
+        
+        // 4. Ghép URL hoàn chỉnh
+        $vnp_Url = $vnp_Url . "?" . $query . "&vnp_SecureHash=" . $vnpSecureHash;
 
         return $vnp_Url;
     }
@@ -148,35 +138,37 @@ class CheckoutController extends Controller
         // Gắn cứng chữ ký xịn
         $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
         
-        $inputData = array();
-        foreach ($request->all() as $key => $value) {
-            if (substr($key, 0, 4) == "vnp_") {
-                $inputData[$key] = $value;
-            }
-        }
-
-        $vnp_SecureHash = $inputData['vnp_SecureHash'];
-        unset($inputData['vnp_SecureHash']);
-        ksort($inputData);
-        $i = 0;
-        $hashData = "";
+        $inputData = $request->all();
         
-        // Dùng urlencode chuẩn
+        // Lấy chữ ký do VNPay gửi về
+        $vnp_SecureHash = $inputData['vnp_SecureHash'] ?? '';
+        
+        // XÓA BỎ CÁC THAM SỐ GÂY NHIỄU CHỮ KÝ (QUAN TRỌNG)
+        unset($inputData['vnp_SecureHash']);
+        
+        if (isset($inputData['vnp_SecureHashType'])) {
+            unset($inputData['vnp_SecureHashType']); 
+        }
+        
+        // Lọc lại chỉ lấy các tham số bắt đầu bằng vnp_
+        $vnpayData = [];
         foreach ($inputData as $key => $value) {
-            if ($i == 1) {
-                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
-            } else {
-                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
-                $i = 1;
+            if (substr($key, 0, 4) == "vnp_") {
+                $vnpayData[$key] = $value;
             }
         }
 
+        // Tạo lại chữ ký theo đúng chuẩn để so sánh
+        ksort($vnpayData);
+        $hashData = http_build_query($vnpayData);
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
         
+        // Lấy ID đơn hàng
         $orderId = explode('_', $request->vnp_TxnRef)[0];
         $order = Order::find($orderId);
 
-        if ($secureHash == $vnp_SecureHash) {
+        // KIỂM TRA CHỮ KÝ
+        if ($secureHash === $vnp_SecureHash) {
             if ($request->vnp_ResponseCode == '00') {
                 if ($order) $order->update(['status' => 'processing']); 
                 return redirect()->route('my-orders')->with('success', 'Giao dịch thành công! Cảm ơn bạn đã thanh toán qua VNPAY.');
