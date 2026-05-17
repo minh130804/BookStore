@@ -182,14 +182,17 @@ class CheckoutController extends Controller
             return redirect()->route('my-orders')->with('error', 'Chữ ký không hợp lệ! Vui lòng thử lại.');
         }
     }
-    // --- 5. HÀM IPN DÀNH CHO MÁY CHỦ VNPAY (BẮT BUỘC TRẢ VỀ JSON) ---
+    
+    // --- 5. HÀM IPN DÀNH CHO MÁY CHỦ VNPAY (LẤY DỮ LIỆU THÔ) ---
     public function vnpayIpn(Request $request)
     {
-        // Gắn cứng chữ ký xịn của bạn (Nhớ kiểm tra lại xem đúng mã web hiện tại chưa nhé)
+        // QUAN TRỌNG: Hãy chắc chắn mã này là của tài khoản PJWU445Q
         $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
         
         $inputData = array();
-        foreach ($request->all() as $key => $value) {
+        
+        // Dùng $_GET thuần của PHP để ngăn Laravel tự động sửa ký tự đặc biệt
+        foreach ($_GET as $key => $value) {
             if (substr($key, 0, 4) == "vnp_") {
                 $inputData[$key] = $value;
             }
@@ -205,7 +208,7 @@ class CheckoutController extends Controller
         $i = 0;
         $hashData = "";
         
-        // Dùng đúng urlencode theo chuẩn file mẫu của VNPay
+        // Vòng lặp chuẩn xác 100% theo tài liệu VNPay
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
                 $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
@@ -217,20 +220,20 @@ class CheckoutController extends Controller
 
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
         
-        // KIỂM TRA CHỮ KÝ BẰNG JSON
+        // KIỂM TRA CHỮ KÝ
         if ($secureHash === $vnp_SecureHash) {
-            $orderId = explode('_', $request->vnp_TxnRef)[0];
+            $orderId = explode('_', $inputData['vnp_TxnRef'])[0];
             $order = Order::find($orderId);
             
             if ($order) {
-                if ($request->vnp_ResponseCode == '00') {
+                if ($inputData['vnp_ResponseCode'] == '00') {
                     $order->update(['status' => 'processing']); 
                 } else {
                     $order->update(['status' => 'cancelled']); 
                 }
-                // TRẢ VỀ JSON ĐÚNG CHUẨN VNPAY YÊU CẦU
                 return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
             } else {
+                // Đơn hàng không tồn tại
                 return response()->json(['RspCode' => '01', 'Message' => 'Order not found']);
             }
         } else {
