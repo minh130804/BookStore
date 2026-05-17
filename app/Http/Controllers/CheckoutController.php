@@ -81,13 +81,14 @@ class CheckoutController extends Controller
         return redirect()->route('my-orders')->with('success', 'Đặt hàng thành công! Đơn hàng của bạn đang chờ xử lý.');
     }
 
-    // --- 3. HÀM TẠO URL VNPAY (CHUẨN HÓA RAWURLENCODE) ---
+    // --- 3. HÀM TẠO URL VNPAY ---
     private function createVnPayUrl($order)
     {
         date_default_timezone_set('Asia/Ho_Chi_Minh');
 
         $vnp_TmnCode = "PJWU445Q"; 
-        $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
+        // CHÌA KHÓA XỊN LẤY TỪ EMAIL
+        $vnp_HashSecret = "332GIVFZX5CVTSPJ04OQXLNGYNPRRUKP"; 
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         $vnp_Returnurl = "https://bookstorehaiha.io.vn/vnpay/return";
 
@@ -119,12 +120,12 @@ class CheckoutController extends Controller
         $hashdata = "";
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
-                $hashdata .= '&' . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
             } else {
-                $hashdata .= rawurlencode($key) . "=" . rawurlencode($value);
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
                 $i = 1;
             }
-            $query .= rawurlencode($key) . "=" . rawurlencode($value) . '&';
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
 
         $vnp_Url = $vnp_Url . "?" . $query;
@@ -134,10 +135,11 @@ class CheckoutController extends Controller
         return $vnp_Url;
     }
 
-    // --- 4. HÀM NHẬN KẾT QUẢ TỪ VNPAY ---
+    // --- 4. HÀM RETURN (KHÁCH XEM) ---
     public function vnpayReturn(Request $request)
     {
-        $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
+        // CHÌA KHÓA XỊN
+        $vnp_HashSecret = "332GIVFZX5CVTSPJ04OQXLNGYNPRRUKP"; 
         
         $inputData = array();
         foreach ($request->all() as $key => $value) {
@@ -148,8 +150,6 @@ class CheckoutController extends Controller
 
         $vnp_SecureHash = $inputData['vnp_SecureHash'] ?? '';
         unset($inputData['vnp_SecureHash']);
-        
-        // Gỡ bẫy vnp_SecureHashType
         if (isset($inputData['vnp_SecureHashType'])) {
             unset($inputData['vnp_SecureHashType']); 
         }
@@ -159,9 +159,9 @@ class CheckoutController extends Controller
         $hashData = "";
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
-                $hashData = $hashData . '&' . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
             } else {
-                $hashData = $hashData . rawurlencode($key) . "=" . rawurlencode($value);
+                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
                 $i = 1;
             }
         }
@@ -172,26 +172,22 @@ class CheckoutController extends Controller
 
         if ($secureHash === $vnp_SecureHash) {
             if ($request->vnp_ResponseCode == '00') {
-                if ($order) $order->update(['status' => 'processing']); 
-                return redirect()->route('my-orders')->with('success', 'Giao dịch thành công! Cảm ơn bạn đã thanh toán qua VNPAY.');
+                return redirect()->route('my-orders')->with('success', 'Giao dịch thành công! Cảm ơn bạn đã thanh toán.');
             } else {
-                if ($order) $order->update(['status' => 'cancelled']); 
                 return redirect()->route('my-orders')->with('error', 'Giao dịch thất bại hoặc đã bị hủy.');
             }
         } else {
             return redirect()->route('my-orders')->with('error', 'Chữ ký không hợp lệ! Vui lòng thử lại.');
         }
     }
-    
-    // --- 5. HÀM IPN DÀNH CHO MÁY CHỦ VNPAY (LẤY DỮ LIỆU THÔ) ---
+
+    // --- 5. HÀM IPN (MÁY CHỦ VNPAY GỌI) ---
     public function vnpayIpn(Request $request)
     {
-        // QUAN TRỌNG: Hãy chắc chắn mã này là của tài khoản PJWU445Q
-        $vnp_HashSecret = "O4JC7ULA6DOV65WIIMX9KDV8TUG6SM98"; 
+        // CHÌA KHÓA XỊN
+        $vnp_HashSecret = "332GIVFZX5CVTSPJ04OQXLNGYNPRRUKP"; 
         
         $inputData = array();
-        
-        // Dùng $_GET thuần của PHP để ngăn Laravel tự động sửa ký tự đặc biệt
         foreach ($_GET as $key => $value) {
             if (substr($key, 0, 4) == "vnp_") {
                 $inputData[$key] = $value;
@@ -207,8 +203,6 @@ class CheckoutController extends Controller
         ksort($inputData);
         $i = 0;
         $hashData = "";
-        
-        // Vòng lặp chuẩn xác 100% theo tài liệu VNPay
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
                 $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
@@ -220,7 +214,6 @@ class CheckoutController extends Controller
 
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
         
-        // KIỂM TRA CHỮ KÝ
         if ($secureHash === $vnp_SecureHash) {
             $orderId = explode('_', $inputData['vnp_TxnRef'])[0];
             $order = Order::find($orderId);
@@ -233,7 +226,6 @@ class CheckoutController extends Controller
                 }
                 return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
             } else {
-                // Đơn hàng không tồn tại
                 return response()->json(['RspCode' => '01', 'Message' => 'Order not found']);
             }
         } else {
