@@ -168,8 +168,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/my-orders', [OrderController::class, 'index'])->name('my-orders');
     Route::put('/my-orders/{order}/cancel', [OrderController::class, 'cancel'])->name('my-orders.cancel');
-    Route::get('/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
+   
 });
+ Route::get('/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
 // --- ROUTE TEST VNPAY ĐỘC LẬP CHỐNG LỖI INERTIA ---   
 // Route dành cho AI Chatbot
  
