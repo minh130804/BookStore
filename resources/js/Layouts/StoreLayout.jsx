@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 
 export default function StoreLayout({ children, cart, filters }) {
-    
+
     const { auth, flash, categories } = usePage().props;
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(filters?.search || '');
@@ -36,14 +36,14 @@ export default function StoreLayout({ children, cart, filters }) {
                             </Link>
                             <nav className="hidden md:flex space-x-8 items-center z-50">
                                 <Link href="/" className="text-gray-900 font-bold hover:text-blue-600 transition">Trang chủ</Link>
-                                
+
                                 {/* Nút Danh mục (Dropdown) */}
                                 <div className="relative group">
                                     <button className="text-gray-900 font-bold hover:text-blue-600 transition flex items-center py-8">
-                                        Danh mục 
+                                        Danh mục
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 mt-0.5 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </button>
-                                    
+
                                     {/* Khung xổ xuống (Bình thường tàng hình, di chuột vào sẽ hiện) */}
                                     <div className="absolute left-0 top-full w-64 bg-white rounded-2xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 overflow-hidden">
                                         <div className="py-2">
@@ -52,9 +52,9 @@ export default function StoreLayout({ children, cart, filters }) {
                                             </Link>
                                             {/* Render động danh sách từ CSDL */}
                                             {categories && categories.map((category) => (
-                                                <Link 
-                                                    key={category.id} 
-                                                    href={`/?category=${category.id}`} 
+                                                <Link
+                                                    key={category.id}
+                                                    href={`/?category=${category.id}`}
                                                     className="block px-6 py-3 text-sm font-semibold text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                 >
                                                     {category.name}
@@ -71,36 +71,36 @@ export default function StoreLayout({ children, cart, filters }) {
                         {/* Search & Actions */}
                         <div className="flex items-center space-x-6">
                             <form onSubmit={handleSearch} className="hidden lg:block relative">
-                                <input 
+                                <input
                                     type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Tìm sách, tác giả..." 
+                                    placeholder="Tìm sách, tác giả..."
                                     className="bg-gray-100 border-transparent rounded-full px-5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-72 text-sm transition-all"
                                 />
                                 <button type="submit" className="absolute right-4 top-3 text-gray-400 hover:text-blue-600">🔍</button>
                             </form>
-                            
+
                             {/* User Menu - Đã sửa thành chữ rõ ràng */}
                             {auth.user ? (
-                              <div className="hidden md:flex items-center space-x-4">
-        <div className="text-sm text-right">
-            <p className="text-gray-500 text-xs">Xin chào,</p>
-            <p className="font-bold text-gray-800">{auth.user.name}</p>
-        </div>
-        
-        <div className="h-6 w-px bg-gray-300"></div>
-        
-        {/* NÚT XEM PROFILE MỚI THÊM VÀO ĐÂY */}
-        <Link href={route('profile.edit')} className="text-sm font-bold text-gray-700 hover:text-blue-600 transition">
-            Xem Profile
-        </Link>
+                                <div className="hidden md:flex items-center space-x-4">
+                                    <div className="text-sm text-right">
+                                        <p className="text-gray-500 text-xs">Xin chào,</p>
+                                        <p className="font-bold text-gray-800">{auth.user.name}</p>
+                                    </div>
 
-        <Link href="/my-orders" className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
-            Đơn hàng của tôi
-        </Link>
-        <Link href={route('logout')} method="post" as="button" className="text-sm font-bold text-red-500 hover:text-red-700 transition">
-            Đăng xuất
-        </Link>
-    </div>
+                                    <div className="h-6 w-px bg-gray-300"></div>
+
+                                    {/* NÚT XEM PROFILE MỚI THÊM VÀO ĐÂY */}
+                                    <Link href={route('profile.edit')} className="text-sm font-bold text-gray-700 hover:text-blue-600 transition">
+                                        Xem Profile
+                                    </Link>
+
+                                    <Link href="/my-orders" className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
+                                        Đơn hàng của tôi
+                                    </Link>
+                                    <Link href={route('logout')} method="post" as="button" className="text-sm font-bold text-red-500 hover:text-red-700 transition">
+                                        Đăng xuất
+                                    </Link>
+                                </div>
                             ) : (
                                 <div className="hidden md:flex items-center space-x-3">
                                     <Link href="/login" className="text-gray-700 font-bold hover:text-blue-600">Đăng nhập</Link>
@@ -216,7 +216,7 @@ export default function StoreLayout({ children, cart, filters }) {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-sm text-center text-gray-500">
-                    &copy; 2026 BookStore Team. All rights reserved. Nhóm 14.
+                    &copy; 2026 BookStore Team. All rights reserved.Hải Hà
                 </div>
             </footer>
         </div>
