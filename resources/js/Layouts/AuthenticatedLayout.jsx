@@ -25,18 +25,13 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+
                                 <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
+                                    href={route('home')}
+                                    active={route().current('home')}
                                 >
-                                    Dashboard
+                                    &larr; Về Trang chủ
                                 </NavLink>
-                                <NavLink
-        href={route('home')}
-        active={route().current('home')}
-    >
-        &larr; Về Trang chủ
-    </NavLink>
                             </div>
                         </div>
 
