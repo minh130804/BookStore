@@ -171,6 +171,7 @@ Route::middleware('auth')->group(function () {
    
 });
  Route::get('/vnpay/return', [CheckoutController::class, 'vnpayReturn'])->name('vnpay.return');
+ Route::get('/vnpay/ipn', [CheckoutController::class, 'vnpayIpn'])->name('vnpay.ipn');
 // --- ROUTE TEST VNPAY ĐỘC LẬP CHỐNG LỖI INERTIA ---   
 // Route dành cho AI Chatbot
  
