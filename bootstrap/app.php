@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
 
-        //
+        // Thêm dòng này để Laravel tin tưởng Proxy của Railway (Ép chạy chuẩn HTTPS)
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
