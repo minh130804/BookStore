@@ -13,14 +13,13 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    public function boot(): void
+   public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
 
-        // Tối ưu hóa: Nhận diện tự động qua Load Balancer
-        // Nếu tín hiệu ngầm báo đây là HTTPS (trên Server), tự động ép link HTTPS
-        // Nếu chạy ở máy tính (Local), lệnh này sẽ bị bỏ qua -> Giữ nguyên HTTP
-        if (request()->header('x-forwarded-proto') === 'https') {
+        // Local có APP_URL là http://localhost:8000 -> Bỏ qua
+        // Server có APP_URL là https://bookstorehaiha.io.vn -> Kích hoạt ép HTTPS
+        if (str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
     }
