@@ -13,13 +13,16 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-   public function boot(): void
+    public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
 
-        // Local có APP_URL là http://localhost:8000 -> Bỏ qua
-        // Server có APP_URL là https://bookstorehaiha.io.vn -> Kích hoạt ép HTTPS
-        if (str_starts_with(config('app.url'), 'https://')) {
+        // Lấy tên miền hiện tại đang truy cập
+        $host = request()->getHost();
+
+        // Nếu tên miền KHÔNG PHẢI là máy tính cá nhân (localhost / 127.0.0.1)
+        // Thì chắc chắn đang ở trên mây -> Ép toàn bộ sang HTTPS
+        if ($host !== 'localhost' && $host !== '127.0.0.1') {
             URL::forceScheme('https');
         }
     }
