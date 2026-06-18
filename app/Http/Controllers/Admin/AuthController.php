@@ -3,16 +3,24 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\AdminAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class AuthController extends Controller
 {
+    protected $adminAuthService;
+
+    public function __construct(AdminAuthService $adminAuthService)
+    {
+        $this->adminAuthService = $adminAuthService;
+    }
+
     public function create()
     {
-        // Kiểm tra cổng admin
-        if (Auth::guard('admin')->check() && Auth::guard('admin')->user()->role === 'admin') {
+        // Kiểm tra cổng admin qua Service
+        if ($this->adminAuthService->isAdminLoggedIn()) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -26,23 +34,19 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Đăng nhập qua cổng admin
-        if (Auth::guard('admin')->attempt($credentials)) {
-            if (Auth::guard('admin')->user()->role === 'admin') {
-                $request->session()->regenerate();
-                return redirect()->route('admin.dashboard');
-            } else {
-                Auth::guard('admin')->logout();
-                return back()->withErrors(['email' => 'Tài khoản này không có quyền quản trị!']);
-            }
+        // Đăng nhập qua cổng admin thông qua Service
+        $result = $this->adminAuthService->login($credentials, $request);
+
+        if ($result['success']) {
+            return redirect()->route('admin.dashboard');
         }
 
-        return back()->withErrors(['email' => 'Email hoặc mật khẩu không chính xác.']);
+        return back()->withErrors(['email' => $result['error']]);
     }
 
     public function destroy(Request $request)
     {
-        Auth::guard('admin')->logout();
+        $this->adminAuthService->logout();
         // Không dùng invalidate() ở đây để tránh làm mất session của Khách hàng đang mua sắm
         return redirect('/admin/login');
     }

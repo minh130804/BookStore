@@ -4,14 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Author;
+use App\Services\AuthorService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AuthorController extends Controller
 {
+    protected $authorService;
+
+    public function __construct(AuthorService $authorService)
+    {
+        $this->authorService = $authorService;
+    }
+
     public function index()
     {
-        $authors = Author::latest()->paginate(10);
+        $authors = $this->authorService->getPaginatedAuthors(10);
         return Inertia::render('Admin/Authors/Index', ['authors' => $authors]);
     }
 
@@ -27,7 +35,7 @@ class AuthorController extends Controller
             'bio' => 'nullable|string',
         ]);
 
-        Author::create($validated);
+        $this->authorService->storeAuthor($validated);
         return redirect()->route('admin.authors.index')->with('success', 'Thêm tác giả thành công!');
     }
 
@@ -43,13 +51,13 @@ class AuthorController extends Controller
             'bio' => 'nullable|string',
         ]);
 
-        $author->update($validated);
+        $this->authorService->updateAuthor($author, $validated);
         return redirect()->route('admin.authors.index')->with('success', 'Cập nhật tác giả thành công!');
     }
 
     public function destroy(Author $author)
     {
-        $author->delete();
+        $this->authorService->deleteAuthor($author);
         return redirect()->route('admin.authors.index')->with('success', 'Xóa tác giả thành công!');
     }
 }

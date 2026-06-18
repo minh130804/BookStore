@@ -38,5 +38,11 @@ return [
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
     ],
+    'vnpay' => [
+        'tmn_code' => env('VNPAY_TMN_CODE', 'PJWU445Q'),
+        'hash_secret' => env('VNPAY_HASH_SECRET', '332GIVFZX5CVTSPJ04OQXLNGYNPRRUKP'),
+        'url' => env('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
+        'return_url' => env('VNP_RETURNURL', 'https://bookstorehaiha.io.vn/vnpay/return'),
+    ],
 
 ];

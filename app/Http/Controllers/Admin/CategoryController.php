@@ -4,14 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\CategoryService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
+    protected $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
+
     public function index()
     {
-        $categories = Category::latest()->paginate(10);
+        $categories = $this->categoryService->getPaginatedCategories(10);
         return Inertia::render('Admin/Categories/Index', ['categories' => $categories]);
     }
 
@@ -27,7 +35,7 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        Category::create($validated);
+        $this->categoryService->storeCategory($validated);
         return redirect()->route('admin.categories.index')->with('success', 'Thêm thể loại thành công!');
     }
 
@@ -43,13 +51,13 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $category->update($validated);
+        $this->categoryService->updateCategory($category, $validated);
         return redirect()->route('admin.categories.index')->with('success', 'Cập nhật thể loại thành công!');
     }
 
     public function destroy(Category $category)
     {
-        $category->delete();
+        $this->categoryService->deleteCategory($category);
         return redirect()->route('admin.categories.index')->with('success', 'Xóa thể loại thành công!');
     }
 }
